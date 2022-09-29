@@ -1,7 +1,7 @@
 # kb-scripts
 
 For the easiness of searchability, when you add the script to the repo, create the folder with the number of the article that corresponds to it, 
-so the common hiererchy will be:
+so the common hierarchy structure will be:
 ```
 kb-scripts  
 ˪ 100210131  
