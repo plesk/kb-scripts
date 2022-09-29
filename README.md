@@ -11,7 +11,7 @@ kb-scripts
 ```  
 Please keep the scripts organized!
 
-###To create a folder:
+## To create a folder:
 
 Click Add file > Create a file
 Type the name of the folder in the input field, followed by a forward slash character.
