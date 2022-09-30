@@ -1,4 +1,5 @@
 #!/bin/bash
+### Copyright 1999-2022. Plesk International GmbH.
 
 usage() {
 cat <<USAGE

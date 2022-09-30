@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
+### Copyright 1999-2022. Plesk International GmbH.
 
 ###############################################################################
 # This script manages and updates chroot environment used in Plesk
 # Requirements : bash 3.x, mysql-client, GNU coreutils
 # Version      : 1.6
-# Maintainer   : Aleksandr Bashurov
 #########
 
 export LANG=C
