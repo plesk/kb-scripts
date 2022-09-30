@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 ### Copyright 1999-2022. Plesk International GmbH.
 
 ###############################################################################
