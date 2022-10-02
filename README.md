@@ -1,18 +1,24 @@
-# kb-scripts
+# Knowledge Base Article Scripts
 
-For the easiness of searchability, when you add the script to the repo, create the folder with the number of the article that corresponds to it, 
-so the common hierarchy structure will be:
+This repository contains the scripts mentioned in various Plesk knowledge base articles.
+
+# Structure
+
+The repository structure is the following:
+
 ```
-kb-scripts  
-˪ 100210131  
-| ˪ script.sh  
-˪ 100210135  
-  ˪ another_script.sh  
-```  
-Please keep the scripts organized!
+kb-scripts
+├── ...
+├── rebuild-awstats
+│   ├── 213901965.kb
+│   └── rebuild-awstats.sh
+├── update-chroot
+│   └── update-chroot.sh
+└── ...
+```
 
-## To create a folder:
+Each script is stored in a separate directory. Shell scripts should have .sh suffix in the file name. The reference to the corresponding KB article is implemented using empty file flags (e.g. `213901965.kb`)
 
-Click Add file > Create a file
-Type the name of the folder in the input field, followed by a forward slash character.
-Type the name of the new file you wish to create in the folder. Note: GitHub doesn’t allow the creation of empty folders.
+# Contribution
+
+Fill free to submit pull requests. Please follow [best practices](https://git-scm.com/book/en/v2/Distributed-Git-Contributing-to-a-Project). Scripts should be well tested, have "usage" block and clear explanation of applicability.
