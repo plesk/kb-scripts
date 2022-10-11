@@ -21,4 +21,4 @@ Each script is stored in a separate directory. Shell scripts should have .sh suf
 
 # Contribution
 
-Fill free to submit pull requests. Please follow [best practices](https://git-scm.com/book/en/v2/Distributed-Git-Contributing-to-a-Project). Scripts should be well tested, have "usage" block and clear explanation of applicability.
+Fill free to submit pull requests. Please follow [best practices](https://git-scm.com/book/en/v2/Distributed-Git-Contributing-to-a-Project). Scripts should be well tested, have "usage" block and clear explanation of applicability!
