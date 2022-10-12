@@ -1,6 +1,12 @@
 #!/bin/bash
 ### Copyright 1999-2022. Plesk International GmbH.
 
+###############################################################################
+# This script recalculates AWStats web-statistics of previous months in Plesk
+# Requirements : bash 3.x, mysql-client, GNU coreutils
+# Version      : 1.0
+#########
+
 usage() {
 cat <<USAGE
 Rebuild AWstats static pages from available log files.
