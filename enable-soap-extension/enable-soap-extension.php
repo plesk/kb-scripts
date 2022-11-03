@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script from Plesk KB article https://support.plesk.com/hc/en-us/articles/213383629-How-to-enable-SOAP-PHP-extension-in-Plesk- 
+# Script from Plesk KB article https://support.plesk.com/hc/en-us/articles/213383629
 # It checks whether or not the class provided by the SOAP module is loaded for OS PHP and enables if it isn't
 
 resultFalse="bool(false)"
