@@ -1,5 +1,6 @@
 #!/bin/bash
 ### Copyright 1999-2022. Plesk International GmbH.
+
 # Script from Plesk KB article https://support.plesk.com/hc/en-us/articles/213913305
 # It restores necessary APS cache packages for installed applications
  name=

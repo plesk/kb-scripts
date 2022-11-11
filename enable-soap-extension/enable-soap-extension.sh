@@ -1,4 +1,5 @@
 #!/bin/bash
+### Copyright 1999-2022. Plesk International GmbH.
 
 # Script from Plesk KB article https://support.plesk.com/hc/en-us/articles/213383629
 # It checks whether or not the class provided by the SOAP module is loaded for OS PHP and enables if it isn't
