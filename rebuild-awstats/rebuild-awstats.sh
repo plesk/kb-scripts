@@ -506,4 +506,3 @@ for domain in $domains ; do
     # cleanup
     rm -f $http_log $https_log
 done
-
