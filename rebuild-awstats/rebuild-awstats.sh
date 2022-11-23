@@ -223,6 +223,17 @@ merge_logs() {
     $AWSTATS_TOOLS_D/logresolvemerge.pl "$@" 
 }
 
+check_log_sort(){
+    local log_file=$1
+
+    LC_TIME=C sort -s -t ' ' -k 4.9n -k 4.5M -k 4.2n -C "$log_file" && return
+
+    echo "WARNING: Сontents of log files not sorted, will running sorting logs, this operation may take a long time"
+
+    LC_TIME=C sort -S 1% -s -t ' ' -k 4.9n -k 4.5M -k 4.2n -o "$log_file.sort" "$log_file"
+    mv -f "$log_file.sort" "$log_file"
+}
+
 # Rebuild AWStats' static pages for domain for certain month
 # Input: AWstats command with options, domain name, year (YYYY), month (m), destination directory for generated pages, SSL flag
 rebuild_pages() {
@@ -384,6 +395,7 @@ for domain in $domains ; do
 		https_log=$domain_stat_dir/https.log
 
 		merge_logs $domain_stat_dir/logs/access_log.processed* $domain_stat_dir/logs/access_log > $http_log
+        check_log_sort $http_log
 		
 		if [ "$?" -ne 0 ] ; then
 			echo "ERROR: failed to merge access_log*. Skipping domain."
@@ -392,6 +404,7 @@ for domain in $domains ; do
 
 		if [ "$has_ssl" == "true" ] ; then
 			merge_logs $domain_stat_dir/logs/access_ssl_log.processed* $domain_stat_dir/logs/access_ssl_log > $https_log
+            check_log_sort $https_log
 
 			if [ "$?" -ne 0 ] ; then
 				echo "WARNING: failed to merge access_ssl_log* logs. Skipping SSL statistics rebuild."
