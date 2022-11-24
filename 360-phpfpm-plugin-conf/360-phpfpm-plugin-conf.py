@@ -4,12 +4,13 @@
 ###############################################################################
 # This script helps to configure the PHP-FPM plugin for 360 Monitoring
 # Requirements : Python 3.x
-# Version      : 1.0
+# Version      : 1.1
 #########
 
-import subprocess
-import sys
-import os
+from subprocess import Popen, call, PIPE
+from sys import version_info
+from os import get_terminal_size, remove
+from re import sub
 
 
 # ==================
@@ -51,14 +52,14 @@ searchApacheLine = 'Redirect permanent /awstats-icon https://<?php echo $VAR->do
 apacheTemplateFile = 'domainVirtualHost.php'
 targetApacheSection = """<?php if ($OPT['ssl'] || !$VAR->domain->physicalHosting->ssl): ?>
     Alias "/plesk-stat" "<?php echo $VAR->domain->physicalHosting->statisticsDir ?>"
-	...
+        ...
     Redirect permanent /awstats-icon https://<?php echo $VAR->domain->urlName ?>/awstats-icon
 <?php endif; ?>
 
 <?php endif; ?>"""
 pluginConfApache = """\n<?php if ($VAR->domain->active && $VAR->domain->physicalHosting->php && !$VAR->domain->physicalHosting->proxySettings['nginxServePhp']): ?>
         <LocationMatch "/status_phpfpm">
-                Require ip <?php echo $OPT['ipAddress']->escapedAddress; ?> 127.0.0.1 ::1
+                Require local
                 ProxyPass unix://<?php echo $VAR->server->webserver->vhostsDir ?>/system/<?php echo $VAR->domain->targetName; ?>/php-fpm.sock|fcgi://127.0.0.1:9000
         </LocationMatch>
 <?php endif; ?>\n"""
@@ -86,6 +87,7 @@ pluginConfNginx = """\n    location ~ ^/status_phpfpm$ {
 #-----
 
 checkPHPServe = 'plesk db -Nse "SELECT value FROM WebServerSettingsParameters WHERE webServerSettingsId = (SELECT val FROM dom_param WHERE param = \'webServerSettingsId\' AND dom_id = (SELECT id FROM domains WHERE name = \'{}\')) AND name = \'nginxServePhp\'"'
+checkPHPAdditionalSettings = 'grep -irl \'pm.status_path = /status_phpfpm\' /opt/plesk/php/*/etc/php-fpm.d/{}.conf && echo 1 || echo 0'
 phpUpdate = 'plesk bin site --update-php-settings {} -additional-settings tmpfile'
 
 
@@ -108,17 +110,17 @@ parseConf = 'sed -n "/^\[phpfpm\]$/,/^\[/p" /etc/agent360.ini'
 #---------------------
 
 def printFunc(textToPrint = ""):
-    if sys.version_info[0] >= 3:
+    if version_info[0] >= 3:
         print(textToPrint)
     else:
         print(textToPrint.strip('()'))
 
 def prRed(textToPrint):
     printFunc("\033[91m {}\033[00m".format(textToPrint))
-	
+
 def prGreen(textToPrint):
     printFunc("\033[92m {}\033[00m".format(textToPrint))
-	
+
 def prBlue(textToPrint):
     printFunc("\033[96m {}\033[00m".format(textToPrint))
 
@@ -131,7 +133,7 @@ def getIndex(string, file):
 def adjustTemplate(tplFile, searchLine, pluginConf, index):
     with open(defaultDir + tplFile, 'r') as template:
         tplData = template.readlines()
-        
+
     tplData.insert(getIndex(searchLine, defaultDir + tplFile) + index, pluginConf)
 
     with open(customDir + tplFile, 'w') as template:
@@ -139,7 +141,7 @@ def adjustTemplate(tplFile, searchLine, pluginConf, index):
         template.write(tplData)
 
 def fillTheLine(symbol, multiplier = 0):
-    columns, rows = os.get_terminal_size()
+    columns, rows = get_terminal_size()
     if multiplier == 0:
         multiplier = columns - 5
     return symbol * multiplier
@@ -149,7 +151,7 @@ def fillTheLine(symbol, multiplier = 0):
 # ===================
 # Preliminary checks
 # ===================
-licenseCheck = subprocess.Popen(pleskLicenseCheck, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
+licenseCheck = Popen(pleskLicenseCheck, stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
 out, err = licenseCheck.communicate()
 if '1' in err:
     printFunc()
@@ -169,21 +171,23 @@ prBlue(fillTheLine("*", 45))
 printFunc()
 
 # Generate a list of all domains on the server
-domains = subprocess.Popen(getDomainList, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
+domains = Popen(getDomainList, stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
 for domain in domains.stdout:
     domainList.append(domain.rstrip())
 
+domainList.remove('example.com')
+
 # Check the availability of the domains and group them
 for d in domainList:
-    statusCode = subprocess.Popen(checkAvailability.format('https://' + d), stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
+    statusCode = Popen(checkAvailability.format('https://' + d), stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
     sCode = statusCode.stdout.readline()
     if '30' in sCode:
-        statusCodeWww = subprocess.Popen(checkAvailability.format('https://www.' + d), stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
+        statusCodeWww = Popen(checkAvailability.format('https://www.' + d), stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
         sCodeWww = statusCodeWww.stdout.readline()
         if '200' not in sCodeWww:
             unavailableDomains.append(d)
     elif '200' in sCode:
-        nginxApachePhp = subprocess.Popen(checkPHPServe.format(d), stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
+        nginxApachePhp = Popen(checkPHPServe.format(d), stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
         serveBool = nginxApachePhp.stdout.readline()
         if 'true' in serveBool:
             nginxDomains.append(d)
@@ -210,14 +214,14 @@ prBlue(fillTheLine("*", 51))
 printFunc()
 
 # Check if the custom templates exist in general
-isDirExists = subprocess.Popen(checkDir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
+isDirExists = Popen(checkDir, stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
 if '1' in isDirExists.stdout.readline():
-    isNginxFileExists = subprocess.Popen(checkFile.format(nginxTemplateFile), stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
-    isApacheFileExists = subprocess.Popen(checkFile.format(apacheTemplateFile), stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
+    isNginxFileExists = Popen(checkFile.format(nginxTemplateFile), stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
+    isApacheFileExists = Popen(checkFile.format(apacheTemplateFile), stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
 
 # Look for the Nginx template
     if '1' in isNginxFileExists.stdout.readline():
-        isTemplateExists = subprocess.Popen(checkTemplate.format(nginxTemplateFile), stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
+        isTemplateExists = Popen(checkTemplate.format(nginxTemplateFile), stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
         if '1' in isTemplateExists.stdout.readline():
             printFunc(" [!] The Nginx template already contains the data about PHP-FPM status")
             printFunc(" [!] Please parse it manually to check the consistency")
@@ -227,14 +231,14 @@ if '1' in isDirExists.stdout.readline():
             printFunc()
     else:
         printFunc(" Creating the necessary Nginx template file...")
-        subprocess.call(copyTemplate.format(nginxTemplateFile), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        call(copyTemplate.format(nginxTemplateFile), stdout=PIPE, stderr=PIPE, shell=True)
         adjustTemplate(nginxTemplateFile, searchNginxLine, pluginConfNginx, -1)
         prGreen("[+] The Nginx template has been created")
         printFunc()
 
 # Look for the Apache template
     if '1' in isApacheFileExists.stdout.readline():
-        isTemplateExists = subprocess.Popen(checkTemplate.format(apacheTemplateFile), stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
+        isTemplateExists = Popen(checkTemplate.format(apacheTemplateFile), stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
         if '1' in isTemplateExists.stdout.readline():
             printFunc(" [!] The Apache template already contains the data about PHP-FPM status")
             printFunc(" [!] Please parse it manually to check the consistency")
@@ -244,16 +248,16 @@ if '1' in isDirExists.stdout.readline():
             printFunc()
     else:
         printFunc(" Creating the necessary template file...")
-        subprocess.call(copyTemplate.format(apacheTemplateFile), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        call(copyTemplate.format(apacheTemplateFile), stdout=PIPE, stderr=PIPE, shell=True)
         adjustTemplate(apacheTemplateFile, searchApacheLine, pluginConfApache, 4)
         prGreen("[+] The Apache template has been created")
         printFunc()
 else:
     printFunc(" Creating the necessary template file")
-    subprocess.call(createCustomDir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    subprocess.call(copyTemplate.format(nginxTemplateFile), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    subprocess.call(copyTemplate.format(apacheTemplateFile), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    
+    call(createCustomDir, stdout=PIPE, stderr=PIPE, shell=True)
+    call(copyTemplate.format(nginxTemplateFile), stdout=PIPE, stderr=PIPE, shell=True)
+    call(copyTemplate.format(apacheTemplateFile), stdout=PIPE, stderr=PIPE, shell=True)
+
     adjustTemplate(nginxTemplateFile, searchNginxLine, pluginConfNginx, -1)
     printFunc()
     prGreen("[+] The Nginx template has been created")
@@ -280,15 +284,17 @@ with open("tmpfile", "w") as tmpFile:
 
 # Adjust the configuration
 for d in (nginxDomains + apacheDomains):
-    printFunc(" Update PHP Settings for the domain " + d + "...")
-    call = subprocess.call(phpUpdate.format(d), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    isPHPAdditionalSettings = Popen(checkPHPAdditionalSettings.format(d), stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
+    if '1' in isPHPAdditionalSettings.stdout.readline():
+        printFunc(" Update PHP Settings for the domain " + d + "...")
+        call = call(phpUpdate.format(d), stdout=PIPE, stderr=PIPE, shell=True)
 
 printFunc()
 prGreen("[+] The PHP Settings have been adjusted")
 printFunc()
 
 # Remove the temporary file
-os.remove("tmpfile")
+remove("tmpfile")
 
 prBlue(fillTheLine("-"))
 printFunc()
@@ -306,16 +312,16 @@ printFunc()
 # Generate a list of links to the status pages of all configured domains
 for d in (nginxDomains + apacheDomains):
     urlsList.append('https://' + d.rstrip() + '/status_phpfpm?json')
-	
+
 # Prepare the necessary line fot the agent360 configuration file
 for url in urlsList:
     statusPageLine += ' ' + url + ','
-	
+
 # Remove the trailing comma
-statusPageLine = statusPageLine[:-1]
+statusPageLine = statusPageLine[:-1] + "\n\n"
 
 # Check the current configuration and adjust it to enable PHP-FPM for all prepared domains
-isPluginEnabled = subprocess.Popen(checkConf, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
+isPluginEnabled = Popen(checkConf, stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
 if '1' in isPluginEnabled.stdout.readline():
     phpSection = getIndex('[phpfpm]',agentConfFile)
     with open(agentConfFile, "r") as conf:
@@ -327,6 +333,7 @@ if '1' in isPluginEnabled.stdout.readline():
                 confContent[itemIndex] = statusPageLine
     with open(agentConfFile, "w") as conf:
         confContent = "".join(confContent)
+        confContent = sub(r'\n\s*\n', '\n\n', confContent)
         conf.write(confContent)
 else:
     with open(agentConfFile, "a+") as conf:
@@ -346,7 +353,7 @@ prBlue(fillTheLine("*", 57))
 prBlue(">>> Restarting the service to apply the configuration...")
 prBlue(fillTheLine("*", 57))
 printFunc()
-restart = subprocess.call(agentRestart, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+restart = call(agentRestart, stdout=PIPE, stderr=PIPE, shell=True)
 
 prGreen("[+] The command to restart the service has been executed")
 printFunc()
@@ -364,10 +371,10 @@ if unavailableDomains:
     prRed("<!!! ATTENTION !!!>")
     prRed("The following domains are unavailable (e.g. unresponsive, have an invalid SSL certificate, unresolvable, etc.):")
     printFunc()
-    
+
     for d in unavailableDomains:
         prBlue(d)
-        
+
     printFunc()
     prRed("[-] The configuration for the domains were not applied.")
     printFunc()
