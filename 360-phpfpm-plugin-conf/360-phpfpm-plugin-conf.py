@@ -87,7 +87,7 @@ pluginConfNginx = """\n    location ~ ^/status_phpfpm$ {
 #-----
 
 checkPHPServe = 'plesk db -Nse "SELECT value FROM WebServerSettingsParameters WHERE webServerSettingsId = (SELECT val FROM dom_param WHERE param = \'webServerSettingsId\' AND dom_id = (SELECT id FROM domains WHERE name = \'{}\')) AND name = \'nginxServePhp\'"'
-checkPHPAdditionalSettings = 'grep -irl \'pm.status_path = /status_phpfpm\' /opt/plesk/php/*/etc/php-fpm.d/{}.conf && echo 1 || echo 0'
+checkPHPAdditionalSettings = 'grep -ir \'pm.status_path = /status_phpfpm\' /opt/plesk/php/*/etc/php-fpm.d/{}.conf > /dev/null && echo 1 || echo 0'
 phpUpdate = 'plesk bin site --update-php-settings {} -additional-settings tmpfile'
 
 
@@ -296,9 +296,9 @@ with open("tmpfile", "w") as tmpFile:
 # Adjust the configuration
 for d in (nginxDomains + apacheDomains):
     isPHPAdditionalSettings = Popen(checkPHPAdditionalSettings.format(d), stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
-    if '1' in isPHPAdditionalSettings.stdout.readline():
+    if '0' in isPHPAdditionalSettings.stdout.readline():
         printFunc(" Update PHP Settings for the domain " + d + "...")
-        call = call(phpUpdate.format(d), stdout=PIPE, stderr=PIPE, shell=True)
+        callPhpUpdate = call(phpUpdate.format(d), stdout=PIPE, stderr=PIPE, shell=True)
 
 printFunc()
 prGreen("[+] The PHP Settings have been adjusted")
@@ -364,7 +364,7 @@ prBlue(fillTheLine("*", 57))
 prBlue(">>> Restarting the service to apply the configuration...")
 prBlue(fillTheLine("*", 57))
 printFunc()
-restart = call(agentRestart, stdout=PIPE, stderr=PIPE, shell=True)
+callRestart = call(agentRestart, stdout=PIPE, stderr=PIPE, shell=True)
 
 prGreen("[+] The command to restart the service has been executed")
 printFunc()
