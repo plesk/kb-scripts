@@ -4,7 +4,7 @@
 ###############################################################################
 # This script helps to configure the PHP-FPM plugin for 360 Monitoring
 # Requirements : Python 3.x
-# Version      : 1.1
+# Version      : 1.2
 #########
 
 from subprocess import Popen, call, PIPE
@@ -175,7 +175,13 @@ domains = Popen(getDomainList, stdout=PIPE, stderr=PIPE, universal_newlines=True
 for domain in domains.stdout:
     domainList.append(domain.rstrip())
 
-domainList.remove('example.com')
+if not domainList:
+    prRed("There are no domains on this server")
+    prRed("Nothing to do")
+    quit()
+
+if 'example.com' in domainList:
+    domainList.remove('example.com')
 
 # Check the availability of the domains and group them
 for d in domainList:
@@ -197,6 +203,11 @@ for d in domainList:
             unavailableDomains.append(d)
     else:
         unavailableDomains.append(d)
+
+if not nginxDomains and not apacheDomains:
+    prRed("There are no domains on this server")
+    prRed("Nothing to do")
+    quit()
 
 prGreen("[+] The list of the domains on the server has been processed successfully")
 printFunc()
