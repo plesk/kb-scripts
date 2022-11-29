@@ -395,7 +395,7 @@ for domain in $domains ; do
 		https_log=$domain_stat_dir/https.log
 
 		merge_logs $domain_stat_dir/logs/access_log.processed* $domain_stat_dir/logs/access_log > $http_log
-        check_log_sort $http_log
+		check_log_sort $http_log
 		
 		if [ "$?" -ne 0 ] ; then
 			echo "ERROR: failed to merge access_log*. Skipping domain."
@@ -404,7 +404,7 @@ for domain in $domains ; do
 
 		if [ "$has_ssl" == "true" ] ; then
 			merge_logs $domain_stat_dir/logs/access_ssl_log.processed* $domain_stat_dir/logs/access_ssl_log > $https_log
-            check_log_sort $https_log
+			check_log_sort $https_log
 
 			if [ "$?" -ne 0 ] ; then
 				echo "WARNING: failed to merge access_ssl_log* logs. Skipping SSL statistics rebuild."
