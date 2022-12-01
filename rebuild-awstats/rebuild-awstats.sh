@@ -4,7 +4,7 @@
 ###############################################################################
 # This script recalculates AWStats web-statistics of previous months in Plesk
 # Requirements : bash 3.x, mysql-client, GNU coreutils
-# Version      : 1.0
+# Version      : 1.1
 #########
 
 usage() {
