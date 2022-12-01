@@ -224,11 +224,11 @@ merge_logs() {
 }
 
 check_log_sort() {
-    local log_file=$1
+    local log_file="$1"
 
     ! LC_TIME=C sort -s -t ' ' -k 4.9n -k 4.5M -k 4.2n -k 4.14 -C "$log_file" || return 0
-    echo "WARNING: Log files are not sorted by timestamp. They will be sorted, but this operation is resource-intensive and may take a long time."
-    ! LC_TIME=C sort -S 1% -s -t ' ' -k 4.9n -k 4.5M -k 4.2n -k 4.14 -o "$log_file.sort" "$log_file" || mv -f "$log_file.sort" "$log_file"
+    echo "  Log files are not sorted by timestamp. They will be sorted, but this operation is resource-intensive and may take a long time."
+    LC_TIME=C sort -S 1% -s -t ' ' -k 4.9n -k 4.5M -k 4.2n -k 4.14 -o "$log_file.sort" "$log_file" && mv -f "$log_file.sort" "$log_file" || rm -f "$log_file.sort"
 }
 
 # Rebuild AWStats' static pages for domain for certain month
