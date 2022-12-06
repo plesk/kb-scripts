@@ -4,7 +4,7 @@
 ###############################################################################
 # This script recalculates AWStats web-statistics of previous months in Plesk
 # Requirements : bash 3.x, mysql-client, GNU coreutils
-# Version      : 1.0
+# Version      : 1.1
 #########
 
 usage() {
@@ -223,6 +223,14 @@ merge_logs() {
     $AWSTATS_TOOLS_D/logresolvemerge.pl "$@" 
 }
 
+check_log_sort() {
+    local log_file="$1"
+
+    ! LC_TIME=C sort -s -t ' ' -k 4.9n -k 4.5M -k 4.2n -k 4.14 -C "$log_file" || return 0
+    echo "  Log files are not sorted by timestamp. They will be sorted, but this operation is resource-intensive and may take a long time."
+    LC_TIME=C sort -S 1% -s -t ' ' -k 4.9n -k 4.5M -k 4.2n -k 4.14 -o "$log_file.sort" "$log_file" && mv -f "$log_file.sort" "$log_file" || rm -f "$log_file.sort"
+}
+
 # Rebuild AWStats' static pages for domain for certain month
 # Input: AWstats command with options, domain name, year (YYYY), month (m), destination directory for generated pages, SSL flag
 rebuild_pages() {
@@ -384,6 +392,7 @@ for domain in $domains ; do
 		https_log=$domain_stat_dir/https.log
 
 		merge_logs $domain_stat_dir/logs/access_log.processed* $domain_stat_dir/logs/access_log > $http_log
+		check_log_sort "$http_log"
 		
 		if [ "$?" -ne 0 ] ; then
 			echo "ERROR: failed to merge access_log*. Skipping domain."
@@ -392,6 +401,7 @@ for domain in $domains ; do
 
 		if [ "$has_ssl" == "true" ] ; then
 			merge_logs $domain_stat_dir/logs/access_ssl_log.processed* $domain_stat_dir/logs/access_ssl_log > $https_log
+			check_log_sort "$https_log"
 
 			if [ "$?" -ne 0 ] ; then
 				echo "WARNING: failed to merge access_ssl_log* logs. Skipping SSL statistics rebuild."
@@ -506,4 +516,3 @@ for domain in $domains ; do
     # cleanup
     rm -f $http_log $https_log
 done
-
