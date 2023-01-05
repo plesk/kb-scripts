@@ -2,7 +2,7 @@
 // Copyright 1999-2023. Plesk International GmbH.
 
 //###############################################################################
-// This script manages and updates chroot environment used in Plesk
+// This script assigns specified PHp hanlder to the multiple domains
 // Requirements : bash 3.x, mysql-client, >php7.4, GNU coreutils
 // Version      : 1.6
 //#########
