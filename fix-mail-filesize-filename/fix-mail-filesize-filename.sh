@@ -131,7 +131,7 @@ fi
 
 # If no options were provided, ask the user if they want to fix or export the mismatches
 if [ $fix_flag -eq 0 ] && [ $export_flag -eq 0 ] && [ $mismatch_count -gt 0 ]; then
-    echo "Inconsistencies found. Would you like to fix them or export them to a file? Enter 'fix', 'export', or 'both':"
+    echo -n "Inconsistencies found. Would you like to fix them or export them to a file? Enter 'fix', 'export', or 'both': "
     read action
     case $action in
         fix)
