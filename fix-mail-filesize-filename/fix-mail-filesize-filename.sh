@@ -5,7 +5,7 @@
 # This script validates and corrects discrepancies between actual and stated file sizes in mail files.
 # Detailed instructions and usage guidelines can be found in the README.md.
 # Requirements : bash 3.x, GNU coreutils
-# Version      : 1.0
+# Version      : 1.2
 #########
 
 # Start the timer
@@ -32,9 +32,20 @@ total_files=$(find ${dir} -type f | grep -E 'S=[0-9]+:' | wc -l)
 count=0
 mismatch_count=0
 
+# Function to sanitize filenames
+sanitize_filename() {
+    local filename="${1}"
+    # Remove any potentially harmful characters
+    filename=$(echo "${filename}" | tr -d '$`|><&\n')
+    echo "${filename}"
+}
+
 # Function to check and fix filenames
 check_and_fix() {
     for file in $(find ${dir} -type f | grep -E 'S=[0-9]+:'); do
+        # Sanitize the filename
+        file=$(sanitize_filename "${file}")
+
         # Extract the expected size from the filename
         expected_size=$(echo ${file} | grep -oP 'S=\K[0-9]+')
 
