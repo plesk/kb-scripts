@@ -68,20 +68,9 @@ mismatch_count=0
 # Initialize an array to store the mismatches
 declare -a mismatches
 
-# Function to sanitize filenames
-sanitize_filename() {
-    local filename="${1}"
-    # Remove any potentially harmful characters
-    filename=$(echo "${filename}" | tr -d '$`|><&\n')
-    echo "${filename}"
-}
-
 # Function to check filenames
 check_filenames() {
     for file in $(find ${dir} -type f | grep -E 'S=[0-9]+:'); do
-        # Sanitize the filename
-        file=$(sanitize_filename "${file}")
-
         # Extract the expected size from the filename
         expected_size=$(echo ${file} | grep -oP 'S=\K[0-9]+')
 
