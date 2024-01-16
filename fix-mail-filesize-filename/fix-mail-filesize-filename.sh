@@ -12,6 +12,9 @@
 fix_flag=0
 export_flag=0
 
+# Initialize counter for fixed mismatches
+fixed_count=0
+
 # Check the arguments
 for arg in "$@"; do
     case $arg in
@@ -119,8 +122,12 @@ fix_mismatches() {
         expected_size="${array[1]}"
         actual_size="${array[2]}"
         new_file=$(echo ${file} | sed "s/S=${expected_size}/S=${actual_size}/")
-        mv "${file}" "${new_file}"
-        echo "File has been renamed to: ${new_file}"
+        if mv "${file}" "${new_file}"; then
+            echo "File has been renamed to: ${new_file}"
+            fixed_count=$((fixed_count+1))
+        else
+            echo "Error: Failed to rename file: ${file}"
+        fi
     done
 }
 
@@ -161,4 +168,7 @@ elapsed_time=$((end_time-start_time))
 # Print the statistics
 echo "Total files checked: ${total_files}"
 echo "Total mismatches found: ${mismatch_count}"
+if [ $fix_flag -eq 1 ] || [ $action == "fix" ] || [ $action == "both" ]; then
+    echo "Total mismatches fixed: ${fixed_count}"
+fi
 echo "Elapsed time: ${elapsed_time} seconds"
