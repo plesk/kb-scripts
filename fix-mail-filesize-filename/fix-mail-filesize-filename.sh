@@ -8,6 +8,26 @@
 # Version      : 1.2
 #########
 
+# Check the number of arguments
+if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
+    echo "Error: Invalid number of arguments"
+    echo "Usage: $0 [--fix|--export|--help] [filename]"
+    exit 1
+fi
+
+# Check the first argument
+if [ "$1" == "--help" ]; then
+    echo "Usage: $0 [--fix|--export|--help] [filename]"
+    echo "--fix: Renames files to correct the discrepancy between actual and stated file sizes."
+    echo "--export: Saves the names of files with discrepancies to a text file."
+    echo "--help: Displays this help message."
+    exit 0
+elif [ "$1" != "--fix" ] && [ "$1" != "--export" ]; then
+    echo "Error: Invalid first argument"
+    echo "Usage: $0 [--fix|--export|--help] [filename]"
+    exit 1
+fi
+
 # Start the timer
 start_time=$(date +%s)
 
