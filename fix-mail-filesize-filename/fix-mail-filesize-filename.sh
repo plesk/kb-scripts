@@ -157,7 +157,7 @@ elapsed_time=$((end_time-start_time))
 # Print the statistics
 echo "Total files checked: ${total_files}"
 echo "Total mismatches found: ${mismatch_count}"
-if [ $fix_flag -eq 1 ] || [ $action == "fix" ] || [ $action == "both" ]; then
+if [ $fix_flag -eq 1 ] || [ "${action:-}" == "fix" ] || [ "${action:-}" == "both" ]; then
     echo "Total mismatches fixed: ${fixed_count}"
 fi
 echo "Elapsed time: ${elapsed_time} seconds"
