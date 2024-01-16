@@ -84,7 +84,7 @@ check_filenames() {
             mismatch_count=$((mismatch_count+1))
 
             # Store the mismatch information
-            mismatches+=("${file},${expected_size},${actual_size}")
+            mismatches+=("${file} ${expected_size} ${actual_size}")
         fi
 
         # Show the progress
@@ -97,7 +97,7 @@ check_filenames() {
 # Function to export mismatches
 export_mismatches() {
     for mismatch in "${mismatches[@]}"; do
-        IFS=',' read -r -a array <<< "$mismatch"
+        IFS read -r -a array <<< "$mismatch"
         file="${array[0]}"
         echo "${file}" >> "${domain}_${username}_mismatches.txt"
     done
@@ -106,7 +106,7 @@ export_mismatches() {
 # Function to fix mismatches
 fix_mismatches() {
     for mismatch in "${mismatches[@]}"; do
-        IFS=',' read -r -a array <<< "$mismatch"
+        IFS read -r -a array <<< "$mismatch"
         file="${array[0]}"
         expected_size="${array[1]}"
         actual_size="${array[2]}"
