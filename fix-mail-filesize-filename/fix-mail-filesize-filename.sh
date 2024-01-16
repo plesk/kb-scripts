@@ -21,6 +21,12 @@ read username
 dir="/var/qmail/mailnames/${domain}/${username}"
 echo "The directory to be checked is: ${dir}"
 
+# Check if the directory exists and is readable
+if [ ! -d "${dir}" ] || [ ! -r "${dir}" ]; then
+    echo "Error: Directory does not exist or is not readable: ${dir}"
+    exit 1
+fi
+
 # Get the total number of files that match the expected filename format
 total_files=$(find ${dir} -type f | grep -E 'S=[0-9]+:' | wc -l)
 count=0
