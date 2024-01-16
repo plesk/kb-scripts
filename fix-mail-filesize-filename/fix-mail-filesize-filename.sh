@@ -5,7 +5,7 @@
 # This script validates and corrects discrepancies between actual and stated file sizes in mail files.
 # Detailed instructions and usage guidelines can be found in the README.md.
 # Requirements : bash 3.x, GNU coreutils
-# Version      : 1.3
+# Version      : 2.0
 #########
 
 # Initialize flags for fix and export options
@@ -70,8 +70,8 @@ sanitize_filename() {
     echo "${filename}"
 }
 
-# Function to check and fix filenames
-check_and_fix() {
+# Function to check filenames
+check_filenames() {
     for file in $(find ${dir} -type f | grep -E 'S=[0-9]+:'); do
         # Sanitize the filename
         file=$(sanitize_filename "${file}")
@@ -87,18 +87,6 @@ check_and_fix() {
             echo "Mismatch found in file: ${file}"
             echo "Expected size: ${expected_size}, Actual size: ${actual_size}"
             mismatch_count=$((mismatch_count+1))
-
-            # If the --export option is set, save the filename to a file
-            if [ $export_flag -eq 1 ]; then
-                echo "${file}" >> "${domain}_${username}_mismatches.txt"
-            fi
-
-            # If the --fix option is set, rename the file
-            if [ $fix_flag -eq 1 ]; then
-                new_file=$(echo ${file} | sed "s/S=${expected_size}/S=${actual_size}/")
-                mv "${file}" "${new_file}"
-                echo "File has been renamed to: ${new_file}"
-            fi
         fi
 
         # Show the progress
@@ -108,8 +96,54 @@ check_and_fix() {
     echo ""  # Move to a new line after the loop
 }
 
-# Run the function
-check_and_fix
+# Function to export mismatches
+export_mismatches() {
+    for file in $(find ${dir} -type f | grep -E 'S=[0-9]+:'); do
+        # Sanitize the filename
+        file=$(sanitize_filename "${file}")
+
+        # Extract the expected size from the filename
+        expected_size=$(echo ${file} | grep -oP 'S=\K[0-9]+')
+
+        # Get the actual size
+        actual_size=$(stat -c%s "${file}")
+
+        # Check if the sizes match
+        if [ "${expected_size}" != "${actual_size}" ]; then
+            echo "${file}" >> "${domain}_${username}_mismatches.txt"
+        fi
+    done
+}
+
+# Function to fix mismatches
+fix_mismatches() {
+    for file in $(find ${dir} -type f | grep -E 'S=[0-9]+:'); do
+        # Sanitize the filename
+        file=$(sanitize_filename "${file}")
+
+        # Extract the expected size from the filename
+        expected_size=$(echo ${file} | grep -oP 'S=\K[0-9]+')
+
+        # Get the actual size
+        actual_size=$(stat -c%s "${file}")
+
+        # Check if the sizes match
+        if [ "${expected_size}" != "${actual_size}" ]; then
+            new_file=$(echo ${file} | sed "s/S=${expected_size}/S=${actual_size}/")
+            mv "${file}" "${new_file}"
+            echo "File has been renamed to: ${new_file}"
+        fi
+    done
+}
+
+# Run the appropriate functions based on the provided arguments
+check_filenames
+if [ $export_flag -eq 1 ]; then
+    export_mismatches
+fi
+if [ $fix_flag -eq 1 ]; then
+    fix_mismatches
+fi
 
 # Calculate the elapsed time
 end_time=$(date +%s)
