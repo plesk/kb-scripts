@@ -5,28 +5,38 @@
 # This script validates and corrects discrepancies between actual and stated file sizes in mail files.
 # Detailed instructions and usage guidelines can be found in the README.md.
 # Requirements : bash 3.x, GNU coreutils
-# Version      : 1.2
+# Version      : 1.3
 #########
 
-# Check the number of arguments
-if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
-    echo "Error: Invalid number of arguments"
-    echo "Usage: $0 [--fix|--export|--help] [filename]"
-    exit 1
-fi
+# Initialize flags for fix and export options
+fix_flag=0
+export_flag=0
 
-# Check the first argument
-if [ "$1" == "--help" ]; then
-    echo "Usage: $0 [--fix|--export|--help] [filename]"
-    echo "--fix: Renames files to correct the discrepancy between actual and stated file sizes."
-    echo "--export: Saves the names of files with discrepancies to a text file."
-    echo "--help: Displays this help message."
-    exit 0
-elif [ "$1" != "--fix" ] && [ "$1" != "--export" ]; then
-    echo "Error: Invalid first argument"
-    echo "Usage: $0 [--fix|--export|--help] [filename]"
-    exit 1
-fi
+# Check the arguments
+for arg in "$@"; do
+    case $arg in
+        --fix)
+            fix_flag=1
+            shift
+            ;;
+        --export)
+            export_flag=1
+            shift
+            ;;
+        --help)
+            echo "Usage: $0 [--fix] [--export]"
+            echo "--fix: Renames files to correct the discrepancy between actual and stated file sizes."
+            echo "--export: Saves the names of files with discrepancies to a text file."
+            echo "--help: Displays this help message."
+            exit 0
+            ;;
+        *)
+            echo "Error: Invalid argument: $arg"
+            echo "Usage: $0 [--fix] [--export]"
+            exit 1
+            ;;
+    esac
+done
 
 # Start the timer
 start_time=$(date +%s)
@@ -79,12 +89,12 @@ check_and_fix() {
             mismatch_count=$((mismatch_count+1))
 
             # If the --export option is set, save the filename to a file
-            if [ "${2}" == "--export" ]; then
-                echo "${file}" >> "${1}_mismatches.txt"
+            if [ $export_flag -eq 1 ]; then
+                echo "${file}" >> "${domain}_${username}_mismatches.txt"
             fi
 
             # If the --fix option is set, rename the file
-            if [ "${1}" == "--fix" ]; then
+            if [ $fix_flag -eq 1 ]; then
                 new_file=$(echo ${file} | sed "s/S=${expected_size}/S=${actual_size}/")
                 mv "${file}" "${new_file}"
                 echo "File has been renamed to: ${new_file}"
@@ -98,8 +108,8 @@ check_and_fix() {
     echo ""  # Move to a new line after the loop
 }
 
-# Run the function with the provided arguments
-check_and_fix $1 $2
+# Run the function
+check_and_fix
 
 # Calculate the elapsed time
 end_time=$(date +%s)
