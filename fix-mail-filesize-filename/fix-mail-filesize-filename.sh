@@ -5,7 +5,7 @@
 # This script validates and corrects discrepancies between actual and stated file sizes in mail files.
 # Detailed instructions and usage guidelines can be found in the README.md.
 # Requirements : bash 3.x, GNU coreutils
-# Version      : 2.0
+# Version      : 2.1
 #########
 
 # Initialize flags for fix and export options
@@ -62,6 +62,9 @@ total_files=$(find ${dir} -type f | grep -E 'S=[0-9]+:' | wc -l)
 count=0
 mismatch_count=0
 
+# Initialize an array to store the mismatches
+declare -a mismatches
+
 # Function to sanitize filenames
 sanitize_filename() {
     local filename="${1}"
@@ -87,6 +90,9 @@ check_filenames() {
             echo "Mismatch found in file: ${file}"
             echo "Expected size: ${expected_size}, Actual size: ${actual_size}"
             mismatch_count=$((mismatch_count+1))
+
+            # Store the mismatch information
+            mismatches+=("${file},${expected_size},${actual_size}")
         fi
 
         # Show the progress
@@ -98,41 +104,23 @@ check_filenames() {
 
 # Function to export mismatches
 export_mismatches() {
-    for file in $(find ${dir} -type f | grep -E 'S=[0-9]+:'); do
-        # Sanitize the filename
-        file=$(sanitize_filename "${file}")
-
-        # Extract the expected size from the filename
-        expected_size=$(echo ${file} | grep -oP 'S=\K[0-9]+')
-
-        # Get the actual size
-        actual_size=$(stat -c%s "${file}")
-
-        # Check if the sizes match
-        if [ "${expected_size}" != "${actual_size}" ]; then
-            echo "${file}" >> "${domain}_${username}_mismatches.txt"
-        fi
+    for mismatch in "${mismatches[@]}"; do
+        IFS=',' read -r -a array <<< "$mismatch"
+        file="${array[0]}"
+        echo "${file}" >> "${domain}_${username}_mismatches.txt"
     done
 }
 
 # Function to fix mismatches
 fix_mismatches() {
-    for file in $(find ${dir} -type f | grep -E 'S=[0-9]+:'); do
-        # Sanitize the filename
-        file=$(sanitize_filename "${file}")
-
-        # Extract the expected size from the filename
-        expected_size=$(echo ${file} | grep -oP 'S=\K[0-9]+')
-
-        # Get the actual size
-        actual_size=$(stat -c%s "${file}")
-
-        # Check if the sizes match
-        if [ "${expected_size}" != "${actual_size}" ]; then
-            new_file=$(echo ${file} | sed "s/S=${expected_size}/S=${actual_size}/")
-            mv "${file}" "${new_file}"
-            echo "File has been renamed to: ${new_file}"
-        fi
+    for mismatch in "${mismatches[@]}"; do
+        IFS=',' read -r -a array <<< "$mismatch"
+        file="${array[0]}"
+        expected_size="${array[1]}"
+        actual_size="${array[2]}"
+        new_file=$(echo ${file} | sed "s/S=${expected_size}/S=${actual_size}/")
+        mv "${file}" "${new_file}"
+        echo "File has been renamed to: ${new_file}"
     done
 }
 
@@ -143,6 +131,27 @@ if [ $export_flag -eq 1 ]; then
 fi
 if [ $fix_flag -eq 1 ]; then
     fix_mismatches
+fi
+
+# If no options were provided, ask the user if they want to fix or export the mismatches
+if [ $fix_flag -eq 0 ] && [ $export_flag -eq 0 ] && [ $mismatch_count -gt 0 ]; then
+    echo "Inconsistencies found. Would you like to fix them or export them to a file? Enter 'fix', 'export', or 'both':"
+    read action
+    case $action in
+        fix)
+            fix_mismatches
+            ;;
+        export)
+            export_mismatches
+            ;;
+        both)
+            fix_mismatches
+            export_mismatches
+            ;;
+        *)
+            echo "Invalid option. No action taken."
+            ;;
+    esac
 fi
 
 # Calculate the elapsed time
