@@ -2,8 +2,10 @@
 ### Copyright 1999-2022. Plesk International GmbH.
 
 PATH=$PATH:/sbin:/bin:/usr/sbin:/usr/bin
-CFTEMP=/tmp/cloudflare-ips.txt
+cfTemp=/tmp/cloudflare-ips.txt
+cfConfig="/etc/nginx/conf.d/cloudflare.conf"
 
+# Sanity checks and exit if nginx gets broken
 if [[ "$(/usr/local/psa/admin/bin/nginxmng --status)" != "Enabled" ]] ; then
 	echo "Nginx is not in use on this Plesk server. Exiting..." && exit 0
 fi
@@ -13,28 +15,47 @@ if [ -f /etc/nginx/conf.d/cf-stop ] ; then
 	printf "The script execution was halted.\n" && exit 0 # also add some notifications here if you would like to receive them
 fi	
 
+prepareConf(){
+    curl -sS https://www.cloudflare.com/ips-v4 >$cfTemp && printf "\n" >> $cfTemp
+    curl -sS https://www.cloudflare.com/ips-v6 >>$cfTemp
+    sed -i -e 's/^/set_real_ip_from /' $cfTemp
+    sed -i '1ireal_ip_header CF-Connecting-IP' $cfTemp
+    sed -i '/[^;] *$/s/$/;/' $cfTemp
+}
 
-curl -sS https://www.cloudflare.com/ips-v4 >$CFTEMP && printf "\n" >> $CFTEMP
-curl -sS https://www.cloudflare.com/ips-v6 >>$CFTEMP
-sed -i -e 's/^/set_real_ip_from /' $CFTEMP
-sed -i '1ireal_ip_header CF-Connecting-IP' $CFTEMP
-sed -i '/[^;] *$/s/$/;/' $CFTEMP
+placeConf(){
+    prepareConf
+    mv $cfTemp $cfConfig
+    if [ `isSeEnforcing` == "1" ] ; then
+        seContextApply "$cfConfig"
+    fi
+}
 
-placeconf(){
-	mv $CFTEMP /etc/nginx/conf.d/cloudflare.conf
+isSeEnforcing(){
+    seMode=$(getenforce)
+    if [ "$seMode" == "Enforcing" ] ; then
+        echo "1"
+    else
+        echo "0"
+    fi
+}
+
+seContextApply(){
+  chcon -t httpd_config_t -u system_u "$1"
 }
 
 
-if [ ! -f /etc/nginx/conf.d/cloudflare.conf ] ; then
+if [ ! -f $cfConfig ] ; then
 	# CF IP List is missing in conf.d
-	placeconf
+	placeConf
 else
 	# CF IP List exists in conf.d 
-	if [[ ! -z "$(cat /etc/nginx/conf.d/cloudflare.conf)" ]] ; then
+	if [[ ! -z "$(cat $cfConfig)" ]] ; then
 		# The list is not empty. Back up the previous one and install the new one.
-		cp /etc/nginx/conf.d/cloudflare.conf{,.bkp} && placeconf
+		cp $cfConfig{,.bkp} && placeConf
 	fi
 fi
+
 
 nginx -t 2>/dev/null > /dev/null
 if [[ $? == 0 ]]; then
@@ -44,7 +65,7 @@ if [[ $? == 0 ]]; then
 else
  	# Configuration is not valid. Switching to the old CF IP list
  	echo "Nginx conf test failed. Rolling back"
- 	mv /etc/nginx/conf.d/cloudflare.conf.bkp /etc/nginx/conf.d/cloudflare.conf
+ 	mv $cfConfig.bkp $cfConfig
  	t2=$(nginx -t 2>/dev/null > /dev/null)
  	if [ "$t2" == 0 ] ; then
  		# Previous config is valid. Restarting.
@@ -52,10 +73,11 @@ else
  		systemctl restart nginx
  	else
  		echo "Old config file also causes failure. Disabling the CF list completely"
- 		mv /etc/nginx/conf.d/cloudflare.conf{,.disabled}
- 		# Add any notification of your liking(telegram/mail/etc...)
+ 		mv $cfConfig{,.disabled}
+ 		# Add any failure notification of your liking(telegram/mail/etc...) here
  		systemctl restart nginx
- 		# creating a stop flag
+ 		# creating a stop flag. Script will exit automatically if it exists.
+ 		# It means you need to fix the issues and remove it manually
  		touch /etc/nginx/conf.d/cf-stop
  	fi
 fi
