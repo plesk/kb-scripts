@@ -411,11 +411,15 @@ for domain in $domains ; do
 	
 	
 		# determine logs' date boundaries
-		log_first_rec_dtime=`head -n 1 $http_log | awk -F'[[/:]' '{print $3,$2,$4}'`
+		http_log_first_rec_dtime=`head -n 1 $http_log | awk -F'[[/:]' '{print $3,$2,$4}'`
+		https_log_first_rec_dtime=`head -n 1 $https_log | awk -F'[[/:]' '{print $3,$2,$4}'`
+		log_first_rec_dtime=$(date -d "$(echo -e "$http_log_first_rec_dtime\n$https_log_first_rec_dtime" | sort -n | head -n1)" +%m/%Y)
+
 		log_begin_date=`date -d "$log_first_rec_dtime" +%m/%Y`
 		date_range=`make_date_range "$log_begin_date-$(date +%m/%Y)"`
 
 		echo "  Logs begin on: $log_first_rec_dtime"
+
 
 		if [ $from_scratch -ne 0 ] ; then
 			rm -rf $domain_stat_dir/webstat/*
