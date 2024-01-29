@@ -1,5 +1,5 @@
 #!/bin/bash
-### Copyright 1999-2022. Plesk International GmbH.
+### Copyright 1999-2024. Plesk International GmbH.
 
 PATH=$PATH:/sbin:/bin:/usr/sbin:/usr/bin
 cfTemp=/tmp/cloudflare-ips.txt
