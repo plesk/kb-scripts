@@ -32,7 +32,7 @@ placeConf(){
 }
 
 isSeEnforcing(){
-    if [ ! -z `which getenforce` ] ; then
+    if [ ! -z `which getenforce` ] ; then # To avoid cosmetic errors when there is no Selinux binaries
         seMode=$(getenforce)
     fi
     if [ "$seMode" == "Enforcing" ] ; then
