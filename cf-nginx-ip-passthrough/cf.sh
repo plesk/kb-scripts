@@ -32,7 +32,9 @@ placeConf(){
 }
 
 isSeEnforcing(){
-    seMode=$(getenforce)
+    if [ ! -z `which getenforce` ] ; then
+        seMode=$(getenforce)
+    fi
     if [ "$seMode" == "Enforcing" ] ; then
         echo "1"
     else
