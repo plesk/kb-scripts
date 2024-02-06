@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-### Copyright 1999-2022. Plesk International GmbH.
+### Copyright 1999-2024. Plesk International GmbH.
 
 ###############################################################################
 # This script helps to configure the PHP-FPM plugin for 360 Monitoring
 # Requirements : Python 3.x
-# Version      : 1.2
+# Version      : 1.3
 #########
 
 from subprocess import Popen, call, PIPE
@@ -30,6 +30,7 @@ createCustomDir = 'mkdir -p /usr/local/psa/admin/conf/templates/custom/domain/'
 copyTemplate = 'cp -a /usr/local/psa/admin/conf/templates/default/domain/{0} /usr/local/psa/admin/conf/templates/custom/domain/{0}'
 pleskLicenseCheck = 'plesk bin license -c'
 getDomainList = 'plesk bin site -l'
+checkIsResolved = 'plesk db -Nse "SELECT val FROM dom_param WHERE param = \'is_resolved\' AND dom_id = (SELECT id FROM domains WHERE name = \'{}\')"'
 checkAvailability = 'curl -s -o /dev/null -w "%{{http_code}}" {}'
 
 
@@ -185,24 +186,34 @@ if 'example.com' in domainList:
 
 # Check the availability of the domains and group them
 for d in domainList:
-    statusCode = Popen(checkAvailability.format('https://' + d), stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
-    sCode = statusCode.stdout.readline()
-    if '30' in sCode:
-        statusCodeWww = Popen(checkAvailability.format('https://www.' + d), stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
-        sCodeWww = statusCodeWww.stdout.readline()
-        if '200' not in sCodeWww:
-            unavailableDomains.append(d)
-    elif '200' in sCode:
+    isResolved = Popen(checkIsResolved.format(d), stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
+    resolvedResult = isResolved.stdout.readline()
+    if 'true' not in resolvedResult:
+        unavailableDomains.append(d)
+    else:
         nginxApachePhp = Popen(checkPHPServe.format(d), stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
         serveBool = nginxApachePhp.stdout.readline()
-        if 'true' in serveBool:
-            nginxDomains.append(d)
-        elif 'false' in serveBool:
-            apacheDomains.append(d)
+        statusCode = Popen(checkAvailability.format('https://' + d), stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
+        sCode = statusCode.stdout.readline()
+        if '30' in sCode:
+            statusCodeWww = Popen(checkAvailability.format('https://www.' + d), stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
+            sCodeWww = statusCodeWww.stdout.readline()
+            if '200' in sCodeWww:
+                if 'true' in serveBool:
+                    nginxDomains.append('www.' + d)
+                elif 'false' in serveBool:
+                    apacheDomains.append('www.' + d)
+                else:
+                    unavailableDomains.append(d)
+        elif '200' in sCode:
+            if 'true' in serveBool:
+                nginxDomains.append(d)
+            elif 'false' in serveBool:
+                apacheDomains.append(d)
+            else:
+                unavailableDomains.append(d)
         else:
             unavailableDomains.append(d)
-    else:
-        unavailableDomains.append(d)
 
 if not nginxDomains and not apacheDomains:
     prRed("There are no domains on this server")
@@ -297,8 +308,8 @@ with open("tmpfile", "w") as tmpFile:
 for d in (nginxDomains + apacheDomains):
     isPHPAdditionalSettings = Popen(checkPHPAdditionalSettings.format(d), stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
     if '0' in isPHPAdditionalSettings.stdout.readline():
-        printFunc(" Update PHP Settings for the domain " + d + "...")
-        callPhpUpdate = call(phpUpdate.format(d), stdout=PIPE, stderr=PIPE, shell=True)
+        printFunc(" Update PHP Settings for the domain " + d.replace('www.', '') + "...")
+        callPhpUpdate = call(phpUpdate.format(d.replace('www.', '')), stdout=PIPE, stderr=PIPE, shell=True)
 
 printFunc()
 prGreen("[+] The PHP Settings have been adjusted")
@@ -370,6 +381,20 @@ prGreen("[+] The command to restart the service has been executed")
 printFunc()
 prBlue(fillTheLine("-"))
 printFunc()
+
+
+# =========================================
+# Show the results
+# =========================================
+
+prBlue(fillTheLine("="))
+printFunc()
+prBlue(fillTheLine("*", 57))
+prBlue("The configuration was applied on:")
+printFunc()
+prGreen("Domains with Apache: {}".format(len(apacheDomains)))
+prGreen("Domains with Nginx: {}".format(len(nginxDomains)))
+prBlue(fillTheLine("*", 57))
 
 
 # =========================================
