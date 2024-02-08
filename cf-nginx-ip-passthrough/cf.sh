@@ -32,7 +32,9 @@ placeConf(){
 }
 
 isSeEnforcing(){
-    seMode=$(getenforce)
+    if [ ! -z `which getenforce` ] ; then # To avoid cosmetic errors when there are no Selinux binaries
+        seMode=$(getenforce)
+    fi
     if [ "$seMode" == "Enforcing" ] ; then
         echo "1"
     else
@@ -49,7 +51,7 @@ if [ ! -f $cfConfig ] ; then
 	# CF IP List is missing in conf.d
 	placeConf
 else
-	# CF IP List exists in conf.d 
+	# CF IP List exists in conf.d
 	if [[ ! -z "$(cat $cfConfig)" ]] ; then
 		# The list is not empty. Back up the previous one and install the new one.
 		cp $cfConfig{,.bkp} && placeConf
@@ -84,4 +86,3 @@ fi
 
 
 exit 0
-
