@@ -16,8 +16,8 @@ if [ -f /etc/nginx/conf.d/cf-stop ] ; then
 fi	
 
 prepareConf(){
-    curl -sS https://www.cloudflare.com/ips-v4 >$cfTemp && printf "\n" >> $cfTemp
-    curl -sS https://www.cloudflare.com/ips-v6 >>$cfTemp
+    curl -sSL https://www.cloudflare.com/ips-v4 >$cfTemp && printf "\n" >> $cfTemp
+    curl -sSL https://www.cloudflare.com/ips-v6 >>$cfTemp
     sed -i -e 's/^/set_real_ip_from /' $cfTemp
     sed -i '1ireal_ip_header CF-Connecting-IP' $cfTemp
     sed -i '/[^;] *$/s/$/;/' $cfTemp
