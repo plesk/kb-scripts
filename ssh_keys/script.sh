@@ -40,3 +40,4 @@ sleep 1
 echo -e "\e[1;31m Done. \e[0m"
 
 echo -e "\e[1;42m6. The Plesk SSH Support Key has been installed under the user $(whoami). Please pass that information to the Support team. \e[0m"
+
