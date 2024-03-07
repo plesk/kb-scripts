@@ -1,6 +1,6 @@
 <?php
 
-/** Copyright 1999-2022. Plesk International GmbH.
+/** Copyright 1999-2024. Plesk International GmbH.
   *
   * Script from Plesk KB article https://support.plesk.com/hc/en-us/articles/12377594456087-PHP-FPM-handler-failed-to-be-configured-for-domain-on-Plesk-for-Linux-server-An-another-FPM-instance-seems-to-already-listen-on
   * It finds and returns extra PHP configuration files.
