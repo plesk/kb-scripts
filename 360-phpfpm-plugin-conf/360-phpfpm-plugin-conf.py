@@ -4,7 +4,7 @@
 ###############################################################################
 # This script helps to configure the PHP-FPM plugin for 360 Monitoring
 # Requirements : Python 3.x
-# Version      : 1.3
+# Version      : 1.4
 #########
 
 from subprocess import Popen, call, PIPE
@@ -29,9 +29,11 @@ checkTemplate = 'grep "status_phpfpm" /usr/local/psa/admin/conf/templates/custom
 createCustomDir = 'mkdir -p /usr/local/psa/admin/conf/templates/custom/domain/'
 copyTemplate = 'cp -a /usr/local/psa/admin/conf/templates/default/domain/{0} /usr/local/psa/admin/conf/templates/custom/domain/{0}'
 pleskLicenseCheck = 'plesk bin license -c'
+pleskIPs = 'plesk db -Nse "SELECT ip_address FROM IP_Addresses"'
 getDomainList = 'plesk bin site -l'
 checkIsResolved = 'plesk db -Nse "SELECT val FROM dom_param WHERE param = \'is_resolved\' AND dom_id = (SELECT id FROM domains WHERE name = \'{}\')"'
 checkAvailability = 'curl -s -o /dev/null -w "%{{http_code}}" {}'
+checkCloudflare = 'curl --silent -I {} | grep Server | cut -f 2 -d ":"'
 
 
 #--------
@@ -43,6 +45,7 @@ domainList = []
 apacheDomains = []
 nginxDomains = []
 unavailableDomains = []
+cloudflareDomains = []
 
 
 #--------
@@ -61,7 +64,7 @@ targetApacheSection = """<?php if ($OPT['ssl'] || !$VAR->domain->physicalHosting
 pluginConfApache = """\n<?php if ($VAR->domain->active && $VAR->domain->physicalHosting->php && !$VAR->domain->physicalHosting->proxySettings['nginxServePhp']): ?>
         <LocationMatch "/status_phpfpm">
                 Require local
-                ProxyPass unix://<?php echo $VAR->server->webserver->vhostsDir ?>/system/<?php echo $VAR->domain->targetName; ?>/php-fpm.sock|fcgi://127.0.0.1:9000
+                ProxyPass unix://<?php echo $VAR->server->webserver->vhostsDir ?>/system/<?php echo $VAR->domain->asciiName; ?>/php-fpm.sock|fcgi://127.0.0.1:9000
         </LocationMatch>
 <?php endif; ?>\n"""
 
@@ -78,7 +81,7 @@ pluginConfNginx = """\n    location ~ ^/status_phpfpm$ {
         deny all;
         fastcgi_split_path_info ^((?U).+\.php)(/?.+)$;
         fastcgi_param PATH_INFO $fastcgi_path_info;
-        fastcgi_pass "unix://<?php echo $VAR->server->webserver->vhostsDir ?>/system/<?php echo $VAR->domain->targetName; ?>/php-fpm.sock";
+        fastcgi_pass "unix://<?php echo $VAR->server->webserver->vhostsDir ?>/system/<?php echo $VAR->domain->asciiName; ?>/php-fpm.sock";
         include /etc/nginx/fastcgi.conf;
     }\n"""
 
@@ -147,6 +150,20 @@ def fillTheLine(symbol, multiplier = 0):
         multiplier = columns - 5
     return symbol * multiplier
 
+def checkIPs(domain):
+    result = False
+    ipList = []
+    hostIPs = []
+    ipArray = Popen(pleskIPs, stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True).stdout.readlines()
+    for ip in ipArray:
+        ipList.append(ip.rstrip())
+    try:
+        hostIPs.append(socket.gethostbyname(domain))
+    except:
+        result = False
+    if any(i in hostIPs for i in ipList):
+        result = True
+    return result
 
 
 # ===================
@@ -188,8 +205,12 @@ if 'example.com' in domainList:
 for d in domainList:
     isResolved = Popen(checkIsResolved.format(d), stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
     resolvedResult = isResolved.stdout.readline()
-    if 'true' not in resolvedResult:
+    isCloudflare = Popen(checkCloudflare.format(d), stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
+    clResult = isCloudflare.stdout.readline()
+    if 'true' not in resolvedResult or not checkIPs(d):
         unavailableDomains.append(d)
+    elif 'cloudflare' in clResult:
+        cloudflareDomains.append(d)
     else:
         nginxApachePhp = Popen(checkPHPServe.format(d), stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
         serveBool = nginxApachePhp.stdout.readline()
@@ -413,4 +434,22 @@ if unavailableDomains:
 
     printFunc()
     prRed("[-] The configuration for the domains were not applied.")
+    printFunc()
+
+
+# ========================================
+# Show the list of the Cloudflare domains
+# ========================================
+
+if cloudflareDomains:
+    printFunc()
+    prRed(fillTheLine("-"))
+    prRed("The following domains are behind Cloudflare:")
+    printFunc()
+
+    for d in cloudflareDomains:
+        prBlue(d)
+
+    printFunc()
+    prRed("[!] The configuration for the domains were not applied. Please make sure the status_phpfpm page is available for them and add manually")
     printFunc()
