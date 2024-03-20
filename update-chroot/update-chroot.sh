@@ -1,5 +1,5 @@
 #!/bin/bash
-### Copyright 1999-2022. Plesk International GmbH.
+### Copyright 1999-2024. WebPros International GmbH.
 
 ###############################################################################
 # This script manages and updates chroot environment used in Plesk
@@ -313,16 +313,12 @@ install_chroot_program() {
   case "$filetype" in
     application/octet-stream*|\
     application/x-executable*|\
-    application/x-shellscript*|\
-    text/x-shellscript*|\
     application/x-sharedlib*|\
-	application/x-pie-executable*|\
-    text/x-perl*)
+    application/x-pie-executable*)
       install_libs "$path"
     ;;
     *)
-      warn "$path is not a program (filetype $filetype), skipping."
-      return 2
+      warn "$path is not an binary executable (filetype $filetype). Shared libraries will not be copied."
     ;;
   esac
 
