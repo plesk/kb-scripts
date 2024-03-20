@@ -447,7 +447,7 @@ install_ld() {
             "$CHROOT_ROOT_D/lib/x86_64-linux-gnu"
     $COPY /lib64/ld-linux* "$CHROOT_ROOT_D/lib64/"
   else
-    libcheck="$(ls /lib/ld-linux* 2> /dev/null | wc -l)"
+    libcheck="$(find /lib/ -maxdepth 1 -name 'ld-linux*' 2>/dev/null | wc -l)"
     if [[ $libcheck -ne 0 ]]; then
       $COPY /lib/ld-linux* /lib/libnss_*.so.2  "$CHROOT_ROOT_D/lib"
     fi
@@ -602,7 +602,6 @@ full_rebuild() {
     apply_template "--apply" "$domain"
   done
   echo -e "\\e[32mDone!\\e[m Successfully rebuilt and reappplied template."
-  exit 0
 }
 
 ###########################################################
