@@ -4,7 +4,7 @@
 ###############################################################################
 # This script helps to check whether there are any restriction to add a server to Plesk 360
 # Requirements : Python 2.7 or 3.x
-# Version      : 1.0
+# Version      : 1.1
 #########
 
 import subprocess
@@ -42,7 +42,7 @@ def endIP(range):
 		mask = '32'
 	eIP = ipConvert(ip)[:int(mask)] + '1' * (32 - int(mask))
 	return eIP
-	
+
 def checkIpInSubnet(ip, start, end):
 	if int(start, 2) <= int(ip, 2) <= int(end, 2):
 		return True
@@ -66,7 +66,7 @@ def getPosition(list, itemone, itemtwo):
 			if itemtwo in sublist:
 				return str(list.index(sublist)) + " " + str(sublist.index(itemtwo))
 				break
-			
+
 def comparePositions(first, second):
 	if int(first.split()[0]) < int(second.split()[0]):
 		return True
@@ -83,10 +83,10 @@ def printFunc(textToPrint = ""):
 
 def prRed(textToPrint):
 	printFunc("\033[91m {}\033[00m" .format(textToPrint))
-	
+
 def prGreen(textToPrint):
 	printFunc("\033[92m {}\033[00m" .format(textToPrint))
-	
+
 def prBlue(textToPrint):
 	printFunc("\033[96m {}\033[00m" .format(textToPrint))
 
@@ -96,7 +96,7 @@ errCCode = False
 getPleskHostname = 'plesk db -Nse "select val from misc where param = \'FullHostName\'"'
 resolveIPList = []
 commandC = 'curl --silent -I {} | grep Server | cut -f 2 -d ":"'
-cArticle = "https://support.plesk.com/hc/en-us/articles/4408702163218"
+cArticle = "https://support.plesk.com/hc/en-us/articles/13303705971095"
 
 prBlue("=========================================================")
 prBlue("Checking whether the server is behind Cloudflare:")
@@ -137,7 +137,7 @@ checkDropRule = False
 checkAllowRule = False
 positionAllowDrop = True
 errFCode = False
-fArticle = "https://support.plesk.com/hc/en-us/articles/115001078014"
+fArticle = "https://support.plesk.com/hc/en-us/articles/12377519983511"
 
 prBlue("================================")
 prBlue("Checking firewall rules:")
@@ -154,7 +154,7 @@ if errData and not "iptables-legacy" in errData:
 	prRed("Otherwise, please check the firewall rules on your own")
 	printFunc()
 elif not outData:
-	prGreen("There are no firewall restrictions for accessing Plesk UI via port 8443")
+	prGreen("There are no active firewall restrictions for accessing Plesk UI via port 8443")
 	printFunc()
 else:
 	for line in outData.splitlines():
@@ -188,7 +188,7 @@ else:
 						prGreen("Access is allowed for the IP address" + "\033[93m {}\033[00m".format(ip))
 						break
 	elif checkAllowRule and allowRulePosition[0] == '0':
-		prGreen("There are no firewall restrictions for accessing Plesk UI via port 8443")
+		prGreen("There are no active firewall restrictions for accessing Plesk UI via port 8443")
 	elif checkAllowRule:
 		for ip in ipAddresses:
 			for sublist in listRules:
@@ -220,14 +220,61 @@ else:
 						break
 					else:
 						prGreen("There are no firewall restrictions for accessing Plesk UI via port 8443")
-		
+
 	if errFCode:
 		printFunc()
 		prRed(">>> Here is the article for help: " + fArticle)
 
 	printFunc()
-	
-		
+
+
+# Check Fail2Ban
+errF2BCode = False
+f2bArticle = "https://support.plesk.com/hc/en-us/articles/12377009252247"
+
+prBlue("=========================================")
+prBlue("Checking Fail2Ban logs:")
+prBlue("=========================================")
+printFunc()
+
+commandCheckF2BLogs = 'cat /var/log/fail2ban.log'
+commandCheckF2BTrusted = 'grep "ignoreip" /etc/fail2ban/jail.local'
+f2bEntries = []
+
+checkF2BLogs = subprocess.Popen(commandCheckF2BLogs, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
+outLogsData, errLogsData = checkF2BLogs.communicate()
+checkF2BTrusted = subprocess.Popen(commandCheckF2BTrusted, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
+outTrustedData, errTrustedData = checkF2BTrusted.communicate()
+
+if errLogsData and not "No such file or directory" in errLogsData:
+	printFunc("ERROR: " + errData)
+	prRed("Please fix the issue and re-run this script")
+	prRed("Otherwise, please check the Fail2Ban logs on your own")
+	printFunc()
+elif "No such file or directory" in errLogsData:
+    prRed("The file /var/log/fail2ban.log does not exist")
+    prRed("Fail2Ban may be disabled but it is recommended to double-check that manually")
+else:
+    for line in outLogsData.splitlines():
+        f2bEntries.append(line)
+
+    if [item for entry in ipAddresses for item in f2bEntries if entry in item]:
+        for ip in ipAddresses:
+            if ip in outTrustedData:
+                prGreen("The trusted list of Fail2Ban contains the IP address" + "\033[93m {}\033[00m".format(ip))
+            elif any(ip in i for i in f2bEntries):
+                errF2BCode = True
+                prRed("The Fail2Ban log has records about the IP address" + "\033[93m {}\033[00m".format(ip))
+    else:
+        prGreen("Fail2Ban did not ban any of the IP addresses")
+
+if errF2BCode:
+    printFunc()
+    prRed(">>> Here is the article for help: " + f2bArticle)
+
+printFunc()
+
+
 # Check administrative restrictions
 noAdmRes = False
 denyList = []
@@ -236,7 +283,7 @@ allowList = []
 excludeAllowList = []
 ipCount = 0
 errACode = False
-aArticle = "https://support.plesk.com/hc/en-us/articles/115001881814"
+aArticle = "https://support.plesk.com/hc/en-us/articles/12377478650647"
 
 prBlue("===============================================================")
 prBlue("Checking restrictions for administrative access rules:")
@@ -266,11 +313,11 @@ else:
 		for line in outData.splitlines():
 			if "deny" in line:
 				denyList.append(line.split())
-				
+
 	if not allowList and not denyList:
 		noAdmRes = True
 		prGreen("There are no administrative restrictions")
-        
+
 	if allowList and not noAdmRes:
 		for ip in ipAddresses:
 			for item in allowList:
@@ -292,7 +339,7 @@ else:
 					prGreen("Access to the Plesk UI is allowed for the IP address" + "\033[93m {}\033[00m".format(ip))
 					excludeDenyList.remove(ip)
 					break
-	
+
 	if excludeDenyList and not noAdmRes:
 		for ip in ipAddresses:
 			if ip in excludeDenyList:
@@ -308,7 +355,7 @@ else:
 
 # Check API
 errApiCode = False
-apiArticle = "https://support.plesk.com/hc/en-us/articles/360001125374"
+apiArticle = "https://support.plesk.com/hc/en-us/articles/12377275665559"
 
 prBlue("=========================================")
 prBlue("Checking [api] section in panel.ini:")
