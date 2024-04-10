@@ -61,7 +61,7 @@ if [ ! -d "${dir}" ] || [ ! -r "${dir}" ]; then
 fi
 
 # Get the total number of files that match the expected filename format
-total_files=$(find ${dir} -type f | grep -E 'S=[0-9]+:' | wc -l)
+total_files=0
 count=0
 mismatch_count=0
 
@@ -70,12 +70,15 @@ declare -a mismatches
 
 # Function to check filenames
 check_filenames() {
-    for file in $(find ${dir} -type f | grep -E 'S=[0-9]+:'); do
+    while IFS= read -r -d '' file; do
         # Extract the expected size from the filename
-        expected_size=$(echo ${file} | grep -oP 'S=\K[0-9]+')
+        expected_size=$(echo ${file} | grep -oP ',S=\K[0-9]+')
 
         # Get the actual size
         actual_size=$(stat -c%s "${file}")
+
+        # Increment the total_files counter
+        total_files=$((total_files+1))
 
         # Check if the sizes match
         if [ "${expected_size}" != "${actual_size}" ]; then
@@ -88,16 +91,16 @@ check_filenames() {
         fi
 
         # Show the progress
-        count=$((count+1))
-        echo -ne "Progress: ${count}/${total_files} files checked\r"
-    done
+        echo -ne "Progress: ${total_files} files checked\\r"
+    done < <(find ${dir} -type f -print0 | grep -zE ',S=[0-9]+')
     echo ""  # Move to a new line after the loop
 }
+
 
 # Function to export mismatches
 export_mismatches() {
     for mismatch in "${mismatches[@]}"; do
-        IFS read -r -a array <<< "$mismatch"
+        IFS= read -r -a array <<< "$mismatch"
         file="${array[0]}"
         echo "${file}" >> "${domain}_${username}_mismatches.txt"
     done
@@ -106,7 +109,7 @@ export_mismatches() {
 # Function to fix mismatches
 fix_mismatches() {
     for mismatch in "${mismatches[@]}"; do
-        IFS read -r -a array <<< "$mismatch"
+        IFS= read -r -a array <<< "$mismatch"
         file="${array[0]}"
         expected_size="${array[1]}"
         actual_size="${array[2]}"
