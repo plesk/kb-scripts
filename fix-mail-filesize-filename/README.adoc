@@ -1,18 +1,18 @@
-# Mail Filesize/Filename Fixer Script
+= Mail Filesize/Filename Fixer Script
 
-## Overview
+== Overview
 
 This script is designed to validate and correct discrepancies between the actual and stated file sizes in mail files. It's intended for use by technically experienced IT engineers.
 
 The script checks mail files in a specified directory, and identifies any files where the size stated in the filename does not match the actual file size. It can optionally fix these discrepancies by renaming the files, and/or export the filenames of the mismatched files to a text file.
 
-## Usage
+== Usage
 
 The script can be run with the following command:
 
-```
+----
 ./scriptname [--fix] [--export]
-```
+----
 
 Replace `scriptname` with the name of the script file.
 
@@ -26,10 +26,10 @@ If no options are provided, the script will just check for mismatches and displa
 
 When you run the script, it will prompt you to enter the domain name and username. The script will then check the mail files in the directory `/var/qmail/mailnames/{domain}/{username}`.
 
-## Requirements
+== Requirements
 
 The script requires Bash 3.x and GNU coreutils.
 
-## Note
+== Note
 
 Please ensure that you have the necessary permissions to read and write to the directory and files before running the script.
