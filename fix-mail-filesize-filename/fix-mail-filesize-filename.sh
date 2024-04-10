@@ -61,7 +61,7 @@ if [ ! -d "${dir}" ] || [ ! -r "${dir}" ]; then
 fi
 
 # Get the total number of files that match the expected filename format
-total_files=$(find ${dir} -type f -print0 | grep -zE ',S=[0-9]+' | wc -l)
+total_files=0
 count=0
 mismatch_count=0
 
@@ -77,6 +77,9 @@ check_filenames() {
         # Get the actual size
         actual_size=$(stat -c%s "${file}")
 
+        # Increment the total_files counter
+        total_files=$((total_files+1))
+
         # Check if the sizes match
         if [ "${expected_size}" != "${actual_size}" ]; then
             echo "Mismatch found in file: ${file}"
@@ -88,8 +91,7 @@ check_filenames() {
         fi
 
         # Show the progress
-        count=$((count+1))
-        echo -ne "Progress: ${count}/${total_files} files checked\r"
+        echo -ne "Progress: ${total_files} files checked\\r"
     done < <(find ${dir} -type f -print0 | grep -zE ',S=[0-9]+')
     echo ""  # Move to a new line after the loop
 }
