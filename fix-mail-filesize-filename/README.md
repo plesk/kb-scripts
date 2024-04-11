@@ -28,7 +28,7 @@ When you run the script, it will prompt you to enter the domain name and usernam
 
 ## Requirements
 
-The script requires Bash 3.x and GNU coreutils.
+The script requires Bash 4.x and GNU coreutils.
 
 ## Note
 
