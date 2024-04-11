@@ -5,7 +5,7 @@
 # This script validates and corrects discrepancies between actual and stated file sizes in mail files.
 # Detailed instructions and usage guidelines can be found in the README.md.
 # Requirements : bash 4.x, GNU coreutils
-# Version      : 2.1.3
+# Version      : 2.1.4
 #########
 
 # Initialize flags for fix and export options
@@ -72,13 +72,13 @@ check_filenames() {
         actual_size=$(stat -c%s "${file}")
 
         # Increment the total_files counter
-        total_files=$((total_files+1))
+        ((total_files++))
 
         # Check if the sizes match
         if [ "${expected_size}" != "${actual_size}" ]; then
             echo "Mismatch found in file: ${file}"
             echo "Expected size: ${expected_size}, Actual size: ${actual_size}"
-            mismatch_count=$((mismatch_count+1))
+            ((mismatch_count++))
 
             # Store the mismatch information
             mismatches["${file}"]="${expected_size} ${actual_size}"
@@ -114,7 +114,7 @@ fix_mismatches() {
         # Attempt to rename the file
         if mv "${file}" "${new_file}"; then
             echo "File has been renamed to: ${new_file}"
-            fixed_count=$((fixed_count+1))
+            ((fixed_count++))
         else
             echo "Error: Failed to rename file: ${file}"
         fi
