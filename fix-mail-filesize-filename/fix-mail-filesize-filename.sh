@@ -66,7 +66,7 @@ count=0
 mismatch_count=0
 
 # Initialize an array to store the mismatches
-declare -a mismatches
+declare -A mismatches
 
 # Function to check filenames
 check_filenames() {
@@ -87,7 +87,7 @@ check_filenames() {
             mismatch_count=$((mismatch_count+1))
 
             # Store the mismatch information
-            mismatches+=("${file} ${expected_size} ${actual_size}")
+            mismatches["${file}"]="${expected_size} ${actual_size}"
         fi
 
         # Show the progress
@@ -108,12 +108,17 @@ export_mismatches() {
 
 # Function to fix mismatches
 fix_mismatches() {
-    for mismatch in "${mismatches[@]}"; do
-        IFS= read -r -a array <<< "$mismatch"
-        file="${array[0]}"
-        expected_size="${array[1]}"
-        actual_size="${array[2]}"
+    # Iterate over the keys (file names) of the associative array
+    for file in "${!mismatches[@]}"; do
+        # Retrieve the expected_size and actual_size values, separated by a space
+        values=(${mismatches["${file}"]})
+        expected_size="${values[0]}"
+        actual_size="${values[1]}"
+
+        # Construct the new filename
         new_file=$(echo ${file} | sed "s/S=${expected_size}/S=${actual_size}/")
+
+        # Attempt to rename the file
         if mv "${file}" "${new_file}"; then
             echo "File has been renamed to: ${new_file}"
             fixed_count=$((fixed_count+1))
@@ -122,6 +127,7 @@ fix_mismatches() {
         fi
     done
 }
+
 
 # Run the appropriate functions based on the provided arguments
 check_filenames
