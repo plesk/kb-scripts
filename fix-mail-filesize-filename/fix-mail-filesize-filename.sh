@@ -4,8 +4,8 @@
 ###############################################################################
 # This script validates and corrects discrepancies between actual and stated file sizes in mail files.
 # Detailed instructions and usage guidelines can be found in the README.md.
-# Requirements : bash 3.x, GNU coreutils
-# Version      : 2.1
+# Requirements : bash 4.x, GNU coreutils
+# Version      : 2.1.3
 #########
 
 # Initialize flags for fix and export options
