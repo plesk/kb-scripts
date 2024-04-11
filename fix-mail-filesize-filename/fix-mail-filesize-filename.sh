@@ -5,7 +5,7 @@
 # This script validates and corrects discrepancies between actual and stated file sizes in mail files.
 # Detailed instructions and usage guidelines can be found in the README.md.
 # Requirements : bash 4.x, GNU coreutils
-# Version      : 2.1.4
+# Version      : 2.1.5
 #########
 
 # Initialize flags for fix and export options
@@ -44,8 +44,11 @@ read domain
 echo -n "Enter the username: "
 read username
 
+# Get the mailnames directory from psa.conf
+plesk_mailnames_dir=$(grep 'PLESK_MAILNAMES_D' /etc/psa/psa.conf | awk '{print $2}')
+
 # Set the directory path
-dir="/var/qmail/mailnames/${domain}/${username}"
+dir="${plesk_mailnames_dir}/${domain}/${username}"
 echo "The directory to be checked is: ${dir}"
 
 # Check if the directory exists and is readable
