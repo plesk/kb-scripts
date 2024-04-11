@@ -5,7 +5,7 @@
 # This script validates and corrects discrepancies between actual and stated file sizes in mail files.
 # Detailed instructions and usage guidelines can be found in the README.md.
 # Requirements : bash 4.x, GNU coreutils
-# Version      : 2.1.5
+# Version      : 2.1.6
 #########
 
 # Initialize flags for fix and export options
@@ -57,7 +57,7 @@ if [ ! -d "${dir}" ] || [ ! -r "${dir}" ]; then
     exit 1
 fi
 
-# Get the total number of files that match the expected filename format
+# Get the total number of files that match the current filename format
 total_files=0
 mismatch_count=0
 fixed_count=0
@@ -68,8 +68,8 @@ declare -A mismatches
 # Function to check filenames
 check_filenames() {
     while IFS= read -r -d '' file; do
-        # Extract the expected size from the filename
-        expected_size=$(echo ${file} | grep -oP ',S=\K[0-9]+')
+        # Extract the current size from the filename
+        current_size=$(echo ${file} | grep -oP ',S=\K[0-9]+')
 
         # Get the actual size
         actual_size=$(stat -c%s "${file}")
@@ -78,13 +78,13 @@ check_filenames() {
         ((total_files++))
 
         # Check if the sizes match
-        if [ "${expected_size}" != "${actual_size}" ]; then
+        if [ "${current_size}" != "${actual_size}" ]; then
             echo "Mismatch found in file: ${file}"
-            echo "Expected size: ${expected_size}, Actual size: ${actual_size}"
+            echo "Current size: ${current_size}, Actual size: ${actual_size}"
             ((mismatch_count++))
 
             # Store the mismatch information
-            mismatches["${file}"]="${expected_size} ${actual_size}"
+            mismatches["${file}"]="${current_size} ${actual_size}"
         fi
 
         # Show the progress
@@ -106,13 +106,13 @@ export_mismatches() {
 fix_mismatches() {
     # Iterate over the keys (file names) of the associative array
     for file in "${!mismatches[@]}"; do
-        # Retrieve the expected_size and actual_size values, separated by a space
+        # Retrieve the current_size and actual_size values, separated by a space
         values=(${mismatches["${file}"]})
-        expected_size="${values[0]}"
+        current_size="${values[0]}"
         actual_size="${values[1]}"
 
         # Construct the new filename
-        new_file=$(echo ${file} | sed "s/S=${expected_size}/S=${actual_size}/")
+        new_file=$(echo ${file} | sed "s/S=${current_size}/S=${actual_size}/")
 
         # Attempt to rename the file
         if mv "${file}" "${new_file}"; then
