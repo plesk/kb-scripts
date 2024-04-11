@@ -12,9 +12,6 @@
 fix_flag=0
 export_flag=0
 
-# Initialize counter for fixed mismatches
-fixed_count=0
-
 # Check the arguments
 for arg in "$@"; do
     case $arg in
@@ -41,9 +38,6 @@ for arg in "$@"; do
     esac
 done
 
-# Start the timer
-start_time=$(date +%s)
-
 # Get the domain name and username
 echo -n "Enter the domain name: "
 read domain
@@ -62,8 +56,8 @@ fi
 
 # Get the total number of files that match the expected filename format
 total_files=0
-count=0
 mismatch_count=0
+fixed_count=0
 
 # Initialize an array to store the mismatches
 declare -A mismatches
@@ -96,7 +90,6 @@ check_filenames() {
     echo ""  # Move to a new line after the loop
 }
 
-
 # Function to export mismatches
 export_mismatches() {
     for mismatch in "${mismatches[@]}"; do
@@ -128,7 +121,6 @@ fix_mismatches() {
     done
 }
 
-
 # Run the appropriate functions based on the provided arguments
 check_filenames
 if [ $export_flag -eq 1 ]; then
@@ -159,14 +151,9 @@ if [ $fix_flag -eq 0 ] && [ $export_flag -eq 0 ] && [ $mismatch_count -gt 0 ]; t
     esac
 fi
 
-# Calculate the elapsed time
-end_time=$(date +%s)
-elapsed_time=$((end_time-start_time))
-
 # Print the statistics
 echo "Total files checked: ${total_files}"
 echo "Total mismatches found: ${mismatch_count}"
 if [ $fix_flag -eq 1 ] || [ "${action:-}" == "fix" ] || [ "${action:-}" == "both" ]; then
     echo "Total mismatches fixed: ${fixed_count}"
 fi
-echo "Elapsed time: ${elapsed_time} seconds"
