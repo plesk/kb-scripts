@@ -24,8 +24,15 @@ echo -e "\e[1;31m Done. \e[0m"
 sudo grep PubkeyAuthentication /etc/ssh/sshd_config
 sleep 1
 
-echo -e "3. Reloading the sshd service to apply the above changes"
-sudo systemctl reload sshd
+echo -e "3. Reloading the SSH service to apply the above changes"
+# Support both older and newer Ubuntu versions
+if systemctl list-units --type=service | grep -q 'sshd.service'; then
+    sudo systemctl reload sshd
+elif systemctl list-units --type=service | grep -q 'ssh.service'; then
+    sudo systemctl reload ssh
+else
+    echo -e "\e[1;33mWarning: SSH service not found. Please reload manually if needed.\e[0m"
+fi
 sleep 1
 echo -e "\e[1;31m Done. \e[0m"
 
