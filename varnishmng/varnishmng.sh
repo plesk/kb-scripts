@@ -368,20 +368,12 @@ function disableVarnishOnDomain(){
 }
 
 function menuDisableVarnishOnDomain(){
-  if [ `availableDomainsList |wc -l` -lt "35" ] ; then
-      menuDomainSelect
-  else
-      read -p "Disabling varnish... Enter domain name: " domainName
-  fi
+  menuDomainSelect
   disableVarnishOnDomain "$selectedDomain"
 }
 
 function menuEnableVarnishOnDomain(){
-  if [ `availableDomainsList |wc -l` -lt "35" ] ; then
-    menuDomainSelect
-  else
-    read -p "Enabling varnish... Enter domain name: " domainName
-  fi
+  menuDomainSelect
   enableVarnishOnDomain "$selectedDomain"
 }
 
