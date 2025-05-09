@@ -7,6 +7,8 @@
 # Version      : 1.0
 #########
 
+set -e  # Stop on the first error. Append '|| true' to failing commands if needed to ignore the failure.
+
 LOG_FILE=plesk_mariadbupdate.log
 ERROR_LOG_FILE=plesk_updatemariadb_error.log
 
