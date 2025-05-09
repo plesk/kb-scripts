@@ -7,6 +7,8 @@
 # Version      : 1.0
 #########
 
+set -e  # Stop on the first error. Append '|| true' to failing commands if needed to ignore the failure.
+
 LOG_FILE=plesk_mariadbupdate.log
 ERROR_LOG_FILE=plesk_updatemariadb_error.log
 
@@ -21,6 +23,17 @@ if [ -f "/etc/yum.repos.d/MariaDB.repo" ] ; then
   mv /etc/yum.repos.d/MariaDB.repo /etc/yum.repos.d/mariadb.repo
 fi
 
+echo "setting up the repository"
+
+echo "#http://downloads.mariadb.org/mariadb/repositories/
+[mariadb]
+name = MariaDB
+baseurl = https://dlm.mariadb.com/repo/mariadb-server/10.5.26/yum/rhel/7/$(uname -m)/
+gpgkey = https://supplychain.mariadb.com/MariaDB-Server-GPG-KEY
+gpgcheck = 1" > /etc/yum.repos.d/mariadb.repo
+
+yum makecache
+
 #Stopping MariaDB
 echo "stopping MariaDB service"
 systemctl stop mariadb
@@ -33,13 +46,6 @@ echo "removing mysql-server package in case it exists"
 rpm -e --nodeps "`rpm -q --whatprovides mariadb-server`"
 
 echo "Upgrading MariaDB"
-
-echo "#http://downloads.mariadb.org/mariadb/repositories/
-[mariadb]
-name = MariaDB
-baseurl = http://yum.mariadb.org/10.5/centos7-amd64
-gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
-gpgcheck=1" > /etc/yum.repos.d/mariadb.repo
 
 yum clean all
 
