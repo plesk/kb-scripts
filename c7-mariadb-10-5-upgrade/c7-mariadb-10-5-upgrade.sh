@@ -23,6 +23,17 @@ if [ -f "/etc/yum.repos.d/MariaDB.repo" ] ; then
   mv /etc/yum.repos.d/MariaDB.repo /etc/yum.repos.d/mariadb.repo
 fi
 
+echo "setting up the repository"
+
+echo "#http://downloads.mariadb.org/mariadb/repositories/
+[mariadb]
+name = MariaDB
+baseurl = http://yum.mariadb.org/10.5/centos7-amd64
+gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
+gpgcheck=1" > /etc/yum.repos.d/mariadb.repo
+
+yum makecache
+
 #Stopping MariaDB
 echo "stopping MariaDB service"
 systemctl stop mariadb
@@ -35,13 +46,6 @@ echo "removing mysql-server package in case it exists"
 rpm -e --nodeps "`rpm -q --whatprovides mariadb-server`"
 
 echo "Upgrading MariaDB"
-
-echo "#http://downloads.mariadb.org/mariadb/repositories/
-[mariadb]
-name = MariaDB
-baseurl = http://yum.mariadb.org/10.5/centos7-amd64
-gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
-gpgcheck=1" > /etc/yum.repos.d/mariadb.repo
 
 yum clean all
 
