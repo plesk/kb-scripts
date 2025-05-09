@@ -28,9 +28,9 @@ echo "setting up the repository"
 echo "#http://downloads.mariadb.org/mariadb/repositories/
 [mariadb]
 name = MariaDB
-baseurl = http://yum.mariadb.org/10.5/centos7-amd64
-gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
-gpgcheck=1" > /etc/yum.repos.d/mariadb.repo
+baseurl = https://dlm.mariadb.com/repo/mariadb-server/10.5.26/yum/rhel/7/$(uname -m)/
+gpgkey = https://supplychain.mariadb.com/MariaDB-Server-GPG-KEY
+gpgcheck = 1" > /etc/yum.repos.d/mariadb.repo
 
 yum makecache
 
