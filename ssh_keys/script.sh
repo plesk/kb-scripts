@@ -8,7 +8,7 @@
 echo -e "1. Adding our IP address to the local firewall"
 if [[ $(which iptables) ]] 2>/dev/null ; then
         echo "Adding our IP address to the local firewall:"
-        sudo iptables -I INPUT -s 195.214.233.0/24,194.8.192.130,81.184.0.141,208.74.127.0/28,184.94.192.0/20 -j ACCEPT
+        sudo iptables -I INPUT -s 195.214.233.0/24,194.8.192.130,81.184.0.141,208.74.127.0/28,184.94.192.0/20,208.74.123.0/24 -j ACCEPT
         sudo ip6tables -I INPUT -s 2001:678:744::/64,2620:0:28a4:4000::/52 -j ACCEPT
 else
         echo "Command iptables is not installed"
